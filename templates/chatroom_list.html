@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat Rooms</title>
+</head>
+<body>
+    <h2>Available Chat Rooms</h2>
+    <ul>
+        {% for room in chatrooms %}
+            <li>
+                <a href="{% url 'room' room_name=room.room_name %}">
+                    {{ room.room_name }}
+                </a>
+            </li>
+        {% empty %}
+            <li>No chat rooms available.</li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
