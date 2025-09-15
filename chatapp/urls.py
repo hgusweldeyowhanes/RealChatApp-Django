@@ -13,6 +13,7 @@ urlpatterns = [
     path("chatrooms/<int:pk>/",views.ChatRoomDetailView.as_view(), name = "chatroom_detail"),
     path("chatrooms/<int:chatroom_id>/messages/", views.MessageView.as_view(), name="message-list-create"),
     path("messages/<int:pk>/",views.MessageDetailView.as_view(), name="message-detail"),
+    path("messages/search/",views.MessageSearchView.as_view(),name='message-search'),
     path('user-status/',views.UserStatusView.as_view()),
     path('user-status/<int:pk>/',views.UserStatusUpdateDeleteView.as_view(),),
     path('blocked-user/',views.BlockedUserView.as_view()),
@@ -21,5 +22,6 @@ urlpatterns = [
     path('message-reaction/',views.MessageReactionView.as_view()),
     path('chatroom-settings/<int:chatroom_id>/',views.ChatRoomSettingView.as_view()),
     path('archived-chat/',views.ArchievedChatView.as_view()),
-    path('deleted-message/',views.DeletedMessageView.as_view(),)
+    path('deleted-message/',views.DeletedMessageView.as_view(),),
+    path('messages/<int:message_id>/react/<int:emoji_id>/',views.AddReactionView.as_view(),name='add-reaction')
 ]

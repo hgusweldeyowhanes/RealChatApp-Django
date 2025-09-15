@@ -9,5 +9,6 @@ psycopg2-binary==2.9.9
 django-environ==0.10.0
 djangorestframework==3.15.0
 djangorestframework-simplejwt==5.2.2
+Pillow-11.3.0
 
 

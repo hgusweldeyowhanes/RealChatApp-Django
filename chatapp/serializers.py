@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from chatapp import models
-
+from cryptography.fernet import Fernet
+from django.conf import settings
 
 class ChatRoomSerializer(serializers.ModelSerializer):
     members = serializers.StringRelatedField(many=True,read_only = True)
@@ -17,6 +18,7 @@ class ChatRoomSerializer(serializers.ModelSerializer):
         
 class MessageSerializer(serializers.ModelSerializer):
     sender_username = serializers.CharField(source = 'sender.username',  read_only = True)
+    content = serializers.CharField()
     class Meta:
         model = models.Message
         fields = [
@@ -33,9 +35,28 @@ class MessageSerializer(serializers.ModelSerializer):
             'attachment',
         ]
         read_only_fields = ['timestamp','is_read','is_edited','deleted']
+
+        def encrypt_message(self,value):
+            key = settings.ENCRYPTION_KEY
+            f = Fernet(key)
+            encrypted_value = f.encrypt(value.encode()).decode()
+            return encrypted_value
+        def validate_content(self,value):
+            return self.encrypt_message(value)
+        def decrypt_message(self,encrypted_content):
+            key = settings.ENCRYPTION_KEY
+            f = Fernet(key)
+            return f.decrypt(encrypted_content.encode()).decode()
+            
      
 
        
+ 
+class EmojiSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Emoji
+        fields = ['id', 'name', 'image', 'is_sticker']
+
 class UserStatusSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source = 'user.username', read_only = True)
     class Meta:
