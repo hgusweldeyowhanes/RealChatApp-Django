@@ -2,7 +2,8 @@ import json
 import re
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
-from chatapp.models import *
+from chatapp import models
+from django.utils import timezone
 
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -41,12 +42,26 @@ class ChatConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def create_message(self, data):
 
-        get_room_by_name = ChatRoom.objects.get(room_name=data['room_name'])
+        get_room_by_name = models.ChatRoom.objects.get(room_name=data['room_name'])
         
-        if not Message.objects.filter(content=data['message']).exists():
-            new_message = Message(
+        if not models.Message.objects.filter(content=data['message']).exists():
+            new_message = models.Message(
                 chatroom=get_room_by_name, 
-                sender=User.objects.get(username = data['sender']), 
+                sender=models.User.objects.get(username = data['sender']), 
                 content=data['message'])
             new_message.save()  
-        
+
+
+class PresenceConsumer(AsyncWebsocketConsumer):
+    async def connect(self):
+        await self.update_presence(True)
+    
+    async def disconnect(self, close_code):
+        await self.update_presence(False)
+
+    async def update_presence(self, online):
+        user = self.scope["user"]
+        await database_sync_to_async(models.UserStatus.objects.filter(user=user).update)(
+            is_online=online,
+            last_seen=timezone.now()
+        )

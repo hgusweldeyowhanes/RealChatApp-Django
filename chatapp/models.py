@@ -1,6 +1,9 @@
 from django.db import models
 from django.contrib.auth.models import User
 import os
+from cryptography.fernet import Fernet
+from django.conf import settings
+
 
 class ChatRoom(models.Model):
     ROOM_TYPE = [
@@ -27,6 +30,11 @@ class ChatRoom(models.Model):
             else:
                 return "Private chat (no members)"
         return self.room_name or f"Group Chat {self.id}"
+class Emoji(models.Model):
+    name = models.CharField(max_length=50)
+    image = models.ImageField(upload_to='emojis/')
+    is_sticker = models.BooleanField(default=False)
+
 class Message(models.Model):
     FILE_TYPE = [
         ('image','Image'),
@@ -44,6 +52,12 @@ class Message(models.Model):
     is_edited = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
     attachment = models.FileField(upload_to='attachements/',null=True,blank=True)
+    emoji_reactions = models.ManyToManyField(Emoji, through='MessageReaction')
+
+    parent = models.ForeignKey('self', null=True, blank=True, 
+                              on_delete=models.SET_NULL,
+                              related_name='thread_replies')
+    is_thread_starter = models.BooleanField(default=False)
 
     class Meta:
         ordering = ['-timestamp']
@@ -52,6 +66,26 @@ class Message(models.Model):
         ]
     def __str__(self):
         return f"Message from {self.sender.username} in {self.chatroom.room_name} at {self.timestamp}"
+    def encrypt_content(self, value):
+        """Encrypt plain text content."""
+        f = Fernet(settings.ENCRYPTION_KEY)
+        return f.encrypt(value.encode()).decode()
+
+    def decrypt_content(self):
+        """Decrypt stored content."""
+        f = Fernet(settings.ENCRYPTION_KEY)
+        return f.decrypt(self.content.encode()).decode()
+
+    def save(self, *args, **kwargs):
+        # Encrypt content before saving if it is not already encrypted
+        if self.content:
+            try:
+                # Try decrypting to see if content is already encrypted
+                Fernet(settings.ENCRYPTION_KEY).decrypt(self.content.encode())
+            except:
+                # If decryption fails, encrypt
+                self.content = self.encrypt_content(self.content)
+        super().save(*args, **kwargs)
     
 class UserStatus(models.Model):
     user = models.OneToOneField(User, related_name='status',on_delete=models.CASCADE)
@@ -90,6 +124,7 @@ class MessageReaction(models.Model):
     user = models.ForeignKey(User, related_name='message_reactions', on_delete=models.CASCADE)
     reaction = models.CharField(max_length=10, choices=REACTION_CHOICES,default='like')
     reacted_at = models.DateTimeField(auto_now_add=True)
+    emoji = models.ForeignKey(Emoji,on_delete=models.CASCADE,null=True,blank=True) 
 
     def __str__(self):
         return f"{self.user.username} reacted {self.reaction} to message {self.message.id}"

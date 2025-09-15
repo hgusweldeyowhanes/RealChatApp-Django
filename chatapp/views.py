@@ -1,8 +1,10 @@
 from django.shortcuts import get_object_or_404,redirect,render
 from chatapp import models
+from django.db.models import Q
 from django.urls import reverse_lazy
 from rest_framework import generics,permissions,status
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from chatapp.serializers import (
     ChatRoomSerializer,
     MessageSerializer,
@@ -55,7 +57,27 @@ def Message_room_View(request, room_name):
     }
     return render(request, 'message.html', context)
 
-
+class AddReactionView(APIView):
+    def post(self,request,message_id,emoji_id):
+        user = request.user
+        try:
+            message = models.Message.objects.get(id = message_id)
+            emoji = models.Emoji.objects.get(id = emoji_id)
+            reaction,created = models.MessageReaction.objects.get_or_create(
+                message=message,
+                emoji=emoji,
+                user=user
+                )
+            if created:
+                return Response({"success:":"reaction added"},status=status.HTTP_201_CREATED)
+            else:
+                return Response({"info":"reaction already exists"},status=status.HTTP_200_OK)
+        except models.Message.DoesNotExist:
+            return Response({"errorr":"message not found"},status=status.HTTP_404_NOT_FOUND)
+        except models.Emoji.DoesNotExist:
+            return Response({"error":"emoji not found"},status=status.HTTP_404_NOT_FOUND)
+        
+        
 class ChatPageView(TemplateView):
     template_name = 'chatpage.html'
 
@@ -103,6 +125,7 @@ class MessageView(generics.ListCreateAPIView):
             serializer.save(sender=request.user, chatroom=chatroom)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+    
 class MessageDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -131,6 +154,16 @@ class MessageDetailView(generics.RetrieveUpdateDestroyAPIView):
         message.is_deleted = True
         message.save()
         return Response({"status":"message deleted"}, status=status.HTTP_204_NO_CONTENT)
+
+class MessageSearchView(APIView):
+    def get(self, request):
+        query = request.GET.get('q')
+        results = models.Message.objects.filter(
+            Q(content__icontains=query) |
+            Q(attachment__icontains=query)
+        )[:100]
+        serializer = MessageSerializer(results, many=True)
+        return Response(serializer.data)
 
 class UserStatusView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
