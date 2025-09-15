@@ -43,15 +43,13 @@ class Message(models.Model):
     is_read = models.BooleanField(default=False)
     is_edited = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
-    attachement = models.FileField(upload_to='attachements/',null=True,blank=True)
+    attachment = models.FileField(upload_to='attachements/',null=True,blank=True)
 
-    def file_name(self):
-        if self.attachement:
-            return os.path.basename(self.attachement.room_name)
-        return None
-    def __str__(self):
-        return self.file_name() or "No Attachement"
-
+    class Meta:
+        ordering = ['-timestamp']
+        indexes = [
+            models.Index(fields=['timestamp','is_read']),
+        ]
     def __str__(self):
         return f"Message from {self.sender.username} in {self.chatroom.room_name} at {self.timestamp}"
     
@@ -71,13 +69,13 @@ class BlockedUser(models.Model):
     def __str__(self):
         return f"{self.blocker.username} blocked {self.blocked.username}"
 class TypingIndicator(models.Model):
-    chatroom = models.ForeignKey(ChatRoom,related_name='typing_indicatore',on_delete=models.CASCADE)
+    chatroom = models.ForeignKey(ChatRoom,related_name='typing_indicators',on_delete=models.CASCADE)
     user = models.ForeignKey(User,related_name='tying_status',on_delete=models.CASCADE)
     is_typing = models.BooleanField(default=False)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.user.username} is {'typing' if self.is_typing else 'not typing'} in {self.chatroom.name}"
+        return f"{self.user.username} is {'typing' if self.is_typing else 'not typing'} in {self.chatroom.room_name}"
 
 class MessageReaction(models.Model):
     REACTION_CHOICES = [

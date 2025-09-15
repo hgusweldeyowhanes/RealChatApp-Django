@@ -30,7 +30,7 @@ class MessageSerializer(serializers.ModelSerializer):
             'is_read',
             'is_edited',
             'is_deleted',
-            'attachement',
+            'attachment',
         ]
         read_only_fields = ['timestamp','is_read','is_edited','deleted']
      
@@ -74,7 +74,7 @@ class TypingIndicatorSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source= 'user.username', read_only = True)
     chatroom_username = serializers.CharField(source = 'chatroom.name', read_only = True)
     user = serializers.PrimaryKeyRelatedField(read_only=True)  # client doesn't send this
-
+ 
     class Meta:
         model = models.TypingIndicator
         fields= [

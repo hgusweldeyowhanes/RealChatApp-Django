@@ -6,7 +6,6 @@ from chatapp.models import *
 
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        # self.room_name = f"room_{self.scope['url_route']['kwargs']['room_name']}"
         room_name_raw = self.scope['url_route']['kwargs']['room_name']
         safe_room_name = re.sub(r'[^a-zA-Z0-9_\-\.]', '-', room_name_raw)
         self.room_name = f"room_{safe_room_name}"

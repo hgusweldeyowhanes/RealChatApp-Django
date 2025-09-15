@@ -107,7 +107,7 @@ class MessageDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_object(self,pk,user):
-        return get_object_or_404(models.Message, id=pk, chatroom__member=user)
+        return get_object_or_404(models.Message, id=pk, chatroom__members=user)
 
     def get(self,request,pk):
         message = self.get_object(pk,request.user)
